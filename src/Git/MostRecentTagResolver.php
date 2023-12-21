@@ -15,7 +15,7 @@ final class MostRecentTagResolver implements TagResolverInterface
     /**
      * @var string[]
      */
-    private const COMMAND = ['git', 'tag', '-l', '--sort=committerdate'];
+    private const COMMAND = 'git tag -l --merged %s --sort=committerdate';
 
     public function __construct(
         private ProcessRunner $processRunner
@@ -27,8 +27,14 @@ final class MostRecentTagResolver implements TagResolverInterface
      */
     public function resolve(string $gitDirectory): ?string
     {
-        $tagList = $this->parseTags($this->processRunner->run(self::COMMAND, $gitDirectory));
-
+        $currentBranch = trim(
+            preg_replace(
+                '/\s+/',
+                ' ',
+                $this->processRunner->run('git branch --show-current')
+            )
+        );
+        $tagList = $this->parseTags($this->processRunner->run(sprintf(self::COMMAND, $currentBranch), $gitDirectory));
         /** @var string $theMostRecentTag */
         $theMostRecentTag = (string) array_pop($tagList);
 
